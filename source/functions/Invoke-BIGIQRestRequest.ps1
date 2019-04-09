@@ -7,9 +7,9 @@ function Invoke-BIGIQRestRequest {
     )
 
     $options = @{
-        Uri = $Script:Session.rootUrl + $path
+        Uri = $BIGIQSession.rootUrl + $path
         Method = $method
-        Headers = @{ 'X-F5-Auth-Token' = $Script:Session.token }
+        Headers = @{ 'X-F5-Auth-Token' = $BIGIQSession.token }
         Body = ConvertTo-Json $requestParameters -Compress
     }
 

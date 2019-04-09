@@ -6,7 +6,7 @@ function New-BIGIQAuthenticationToken {
         $credential,
         $loginReference,
         [switch]
-        $setSession
+        $PassThru
     )
 
     $requestParameters = @{
@@ -22,15 +22,16 @@ function New-BIGIQAuthenticationToken {
         UseBasicParsing = $true
     }
 
+    Write-Verbose 'Getting BIG-IQ access token'
     $response = Invoke-RestMethod @requestOptions
     
-    $response | Write-Output
-    if($setSession.IsPresent) {
-        Write-Verbose 'Setting BIG-IQ session'
-        $Script:Session = New-Object PSCustomObject -Property @{
-            rootUrl = $rootUrl
-            authResponse = $response
-            token = $response.token.token # Yes, token twice.
-        }
+    $BIGIQSession = New-Object PSCustomObject -Property @{
+        rootUrl = $rootUrl
+        authResponse = $response
+        token = $response.token.token # Yes, token twice.
+    }
+
+    if($PassThru.IsPresent) {
+        $response | ConvertTo-Json | ConvertFrom-Json
     }
 }
