@@ -1,5 +1,5 @@
 # GRAND-IQ Powershell Module
-A Powershell module for the F5 BIG-IQ REST API interface.
+An **unoffical** Powershell module for the F5 BIG-IQ REST API interface.
 
 The goal is to provide easy access to any BIG-IQ REST API via the core `Invoke-BIGIQRestRequest` function. As well as offer wrappers around the core function to give you familiar access to higher level BIG-IQ functionality such as virtual servers, pools, etc.
 
@@ -18,10 +18,10 @@ Import-Module GRAND-IQ
 ```
 $yourCredential = Get-Credential
 $loginReference = 'https://loginreference link' # See note below.
-New-BIGIQAuthenticationToken -rootUrl 'https://url-to-your-big-iq' -credential $yourCredential -loginReference $loginReference -setSession
+New-BIGIQAuthenticationToken -rootUrl 'https://url-to-your-big-iq' -credential $yourCredential -loginReference $loginReference
 ```
 
-The session is stored within the script module and is used automatically as long as you specify the `-setSession` switch. `New-BIGIQAuthenticationToken` outputs the session object and you can keep it in a variable for use later. This would be useful if you plan on querying multiple BIG-IQs within the same script.
+The session is stored within the script module and is used automatically. `New-BIGIQAuthenticationToken` outputs the session object (via `-PassThru`) and you can keep it in a variable for use later. This would be useful if you plan on querying multiple BIG-IQs within the same script.
 
 > Get the login reference link by watching your network traffic when logging in via the web browser.
 
