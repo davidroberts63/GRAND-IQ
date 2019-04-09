@@ -13,7 +13,7 @@ function Invoke-BIGIQRestRequest {
         Body = ConvertTo-Json $requestParameters -Compress
     }
 
-    $response = Invoke-RestMethod @options -Verbose:$Verbose
+    $response = Invoke-RestMethod @options
 
     $response | Write-Output
 }
