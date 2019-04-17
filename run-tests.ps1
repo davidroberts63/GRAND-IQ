@@ -1,4 +1,4 @@
-$pester = Get-Module -ListAvailable Pester -ErrorAction SilentlyContinue
+$pester = Get-Module -ListAvailable Pester -ErrorAction SilentlyContinue | Sort-Object Version | Select-Object -Last 1
 if(-not $pester) {
     Write-Warning "Could not find the Pester Powershell module. 'Install-Module Pester -Force -SkipPublisherCheck' first."
     exit 1
@@ -17,4 +17,4 @@ $pesterOptions = @{
     CodeCoverageOutputFile = "$PSScriptRoot\coverage-results.xml"
     CodeCoverageOutputFileFormat = 'JaCoCo'
 }
-Invoke-Pester @$pesterOptions
+Invoke-Pester @pesterOptions
