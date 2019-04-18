@@ -22,4 +22,10 @@ Describe 'New-BIGIQAuthenticationToken' {
         } -ModuleName GRAND-IQ
     }
 
+    It 'passes the session data through' {
+        $output = New-BIGIQAuthenticationToken -rootUrl 'https://noop' -credential $credential -PassThru
+
+        $output | Should -Not -BeNullOrEmpty
+    }
+
 }
