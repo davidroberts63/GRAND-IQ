@@ -1,4 +1,26 @@
 function New-BIGIQAuthenticationToken {
+    <#
+    .SYNOPSIS
+    Aquires an authorization token from a BIG-IQ or BIG-IP device; saving it into a session object for use in future calls.
+
+    .DESCRIPTION
+    Given a fully qualified RootUrl and appropriate user Credential, this posts to the authn endpoint on a BIG-IP or BIG-IQ device. The resulting authentication token is stored in a session object that Invoke-BIGIQRestRequest will use automatically. The LoginReference (alias LoginProviderName) will adjust the login payload appropriately.
+
+    .PARAMETER RootUrl
+    The fully qualified URL to the root of your BIG-IP or BIG-IQ device.
+
+    .PARAMETER Credential
+    The credentials for authenticating with the BIG-IP or BIG-IQ device.
+
+    .PARAMETER LoginReference
+    The URL to the login provider (typically for BIG-IQ) or the simple name of the provider (for BIG-IP). If a URL the login will add this login reference within a 'link' property in the 'loginReference' payload property. Defaults to 'tmos'.
+
+    .PARAMETER PassThru
+    Will return the authorization token that you can use yourself for other purposes. Or to switch between different devices.
+
+    .EXAMPLE
+    New-BIGIQAuthentication -RootUrl 'https://testbigiq.test.com' -Credential (Get-Credential)
+    #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
