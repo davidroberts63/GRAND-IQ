@@ -1,10 +1,17 @@
 function New-BIGIQAuthenticationToken {
     [CmdletBinding()]
     param(
-        $rootUrl,
+        [Parameter(Mandatory)]
+        $RootUrl,
+
+        [Parameter(Mandatory)]
         [PSCredential]
-        $credential,
-        $loginReference,
+        $Credential,
+
+        [Alias('LoginProviderName')]
+        [string]
+        $LoginReference = 'tmos',
+
         [switch]
         $PassThru
     )
@@ -12,7 +19,22 @@ function New-BIGIQAuthenticationToken {
     $requestParameters = @{
         username = $credential.Username
         password = $credential.GetNetworkCredential().Password
-        loginReference = @{ link = $loginReference }
+    }
+
+    try {
+        # BIG-IQ will use Login Reference with a link property for things like LDAP.
+        # Those are specified via a fully qualified uri. If that is what's provided
+        # form this additional parameter for the login appropriately.
+        $test = New-Object System.Uri($loginReference)
+        Write-Verbose 'Setting login reference'
+        $requestParameters.loginReference = @{ link = $loginReference }
+    } catch [System.Management.Automation.MethodInvocationException] {
+
+        # If the given 'reference' is not a uri, simply default to the BIG-IP format.
+        if($PSItem.Exception.Message -like '*Invalid URI: The format of the URI could not be determined.*') {
+            Write-Verbose 'Setting login provider name'
+            $requestParameters.loginProviderName = $loginReference
+        }
     }
 
     $requestOptions = @{
