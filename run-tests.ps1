@@ -1,3 +1,9 @@
+[CmdletBinding()]
+param(
+    [Switch]$IncludeCodeCoverage
+)
+
+Write-Host 'Verifying Pester is available...'
 $pester = Get-Module -ListAvailable Pester -ErrorAction SilentlyContinue | Sort-Object Version | Select-Object -Last 1
 if(-not $pester) {
     Write-Warning "Could not find the Pester Powershell module. 'Install-Module Pester -Force -SkipPublisherCheck' first."
@@ -9,12 +15,18 @@ if(-not $pester) {
 
 Import-Module Pester -ErrorAction SilentlyContinue
 
+Write-Host 'Running Pester...'
 $pesterOptions = @{
     PassThru = $true
     OutputFile = "$PSScriptRoot\tests-results.xml"
     OutputFormat = 'NUnitXML'
-    CodeCoverage = "$PSScriptRoot\source\functions\*"
-    CodeCoverageOutputFile = "$PSScriptRoot\coverage-results.xml"
-    CodeCoverageOutputFileFormat = 'JaCoCo'
 }
-Invoke-Pester @pesterOptions
+
+if($IncludeCodeCoverage) {
+    $pesterOptions += @{
+        CodeCoverage = "$PSScriptRoot\GRAND-IQ\functions\*"
+        CodeCoverageOutputFile = "$PSScriptRoot\coverage-results.xml"
+        CodeCoverageOutputFileFormat = 'JaCoCo'
+    }
+}
+Invoke-Pester @pesterOptions | Out-Null

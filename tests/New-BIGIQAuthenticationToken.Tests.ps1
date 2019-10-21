@@ -13,12 +13,21 @@ Describe 'New-BIGIQAuthenticationToken' {
         Assert-MockCalled Invoke-RestMethod -ParameterFilter { $Uri.AbsolutePath -eq '/mgmt/shared/authn/login' } -ModuleName GRAND-IQ
     }
 
-    It 'specifies the correct login reference structure' {
-        New-BIGIQAuthenticationToken -rootUrl 'https://noop' -credential $credential -loginReference 'some-login-reference-url'
+    It 'specifies the correct login reference structure when a uri' {
+        New-BIGIQAuthenticationToken -rootUrl 'https://noop' -credential $credential -loginReference 'http://www.example.com/'
         Assert-MockCalled Invoke-RestMethod -ParameterFilter { 
             $payload = $Body | ConvertFrom-Json
-            
-            return $payload.loginReference -and $payload.loginReference.link -and ($payload.loginReference.link -eq 'some-login-reference-url')
+
+            return $payload.loginReference -and $payload.loginReference.link -and ($payload.loginReference.link -eq 'http://www.example.com/')
+        } -ModuleName GRAND-IQ
+    }
+
+    It 'specifies the correct login provider name when NOT a uri' {
+        New-BIGIQAuthenticationToken -rootUrl 'https://noop' -credential $credential -loginReference 'some-reference-name'
+        Assert-MockCalled Invoke-RestMethod -ParameterFilter { 
+            $payload = $Body | ConvertFrom-Json
+
+            return $payload.loginProviderName -and ($payload.loginProviderName -eq 'some-reference-name')
         } -ModuleName GRAND-IQ
     }
 
