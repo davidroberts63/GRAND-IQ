@@ -38,6 +38,9 @@ function New-BIGIQAuthenticationToken {
         $PassThru
     )
 
+    # Big-IP does not handle empty segments well especially in authentication.
+    $rootUrl = $rootUrl -replace '/$',''
+
     $requestParameters = @{
         username = $credential.Username
         password = $credential.GetNetworkCredential().Password
