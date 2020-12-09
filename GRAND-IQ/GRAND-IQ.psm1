@@ -1,8 +1,7 @@
 Set-StrictMode -Version 2.0
 
 $BIGIQSession = New-Object PSCustomObject -Property @{
-    rootUrl = $null
-    authResponse = $null
+    rootUri = $null
     token = $null
 }
 
