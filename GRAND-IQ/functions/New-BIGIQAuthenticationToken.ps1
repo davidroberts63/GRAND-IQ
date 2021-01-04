@@ -38,6 +38,9 @@ function New-BIGIQAuthenticationToken {
         $PassThru
     )
 
+    # Big-IP does not handle empty segments well especially in authentication.
+    $rootUrl = $rootUrl -replace '/$',''
+
     $requestParameters = @{
         username = $credential.Username
         password = $credential.GetNetworkCredential().Password
@@ -69,11 +72,41 @@ function New-BIGIQAuthenticationToken {
     Write-Verbose 'Getting BIG-IQ access token'
     $response = Invoke-RestMethod @requestOptions
     
-    $BIGIQSession.rootUrl = $rootUrl
-    $BIGIQSession.authResponse = $response
-    $BIGIQSession.token = $response.token.token # Yes, token twice.
+    Set-BIGIQSession -RootUrl $RootUrl -Token $response.token.token # Yes, token twice.
 
     if($PassThru.IsPresent) {
         $response | ConvertTo-Json | ConvertFrom-Json
     }
+}
+
+function Set-BIGIQSession {
+    <#
+    .SYNOPSIS
+    Sets the session object for use in future calls.
+
+    .DESCRIPTION
+    Sets the token and root url that future REST calls will use for authentication and requests.
+
+    .PARAMETER RootUrl
+    The fully qualified URL to the root of your BIG-IP or BIG-IQ device.
+
+    
+    .PARAMETER Token
+    The authentication token from the BIG-IP/IQ. You can also use the $response.token.token value from an earlier call to New-BIGIQAuthenticationToken -PassThru
+
+    .EXAMPLE
+    Set-BIGIQSession -RootUrl 'https://testbigiq.test.com' -Token $response.token.token
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        $RootUrl,
+
+        [string]
+        $Token
+    )
+
+    $BIGIQSession.rootUri = (New-Object System.UriBuilder($RootUrl)).Uri
+    $BIGIQSession.token = $Token
+
 }

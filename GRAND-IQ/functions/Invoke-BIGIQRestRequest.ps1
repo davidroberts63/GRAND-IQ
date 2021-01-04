@@ -1,10 +1,49 @@
 function Invoke-BIGIQRestRequest {
+    <#
+    .SYNOPSIS
+    Aquires an authorization token from a BIG-IQ or BIG-IP device; saving it into a session object for use in future calls.
+
+    .DESCRIPTION
+    Given a fully qualified RootUrl and appropriate user Credential, this posts to the authn endpoint on a BIG-IP or BIG-IQ device. The resulting authentication token is stored in a session object that Invoke-BIGIQRestRequest will use automatically. The LoginReference (alias LoginProviderName) will adjust the login payload appropriately.
+
+    .PARAMETER Link
+    A fully qualifified URI to call. This is best used with selfLink properties in the responses from the BIG-IQ or BIG-IP. When used, the host in the Link value will be replaced with the RootUrl from the session.
+
+    .PARAMETER Path
+    The path of the URL to call. This is combined with the RootUrl given in the New-BIGIQAuthenticationToken or the RootUrl used in Set-BIGIQSession
+
+    .PARAMETER Method
+    The REST Method to use in the HTTP call.
+
+    .PARAMETER RequestParameters
+    An object containing the data to pass as the content (body) of the request as JSON. If a string it will pass that data as the content unchanged.
+
+    .PARAMETER ExpandSubCollections
+    If present will expand sub collections in the REST API call.
+
+    .PARAMETER SessionToken
+    The authentication token retrieved from a prior call to New-BIGIQAuthenticationToken or REST call.
+
+    .EXAMPLE
+    New-BIGIQAuthentication -RootUrl 'https://testbigiq.test.com' -Credential (Get-Credential)
+    #>
     [CmdletBinding(SupportsShouldProcess, SupportsPaging)]
     param(
+        $Link,
+
         $Path,
+
         $Method = 'GET',
+
         [Alias('Body')]
         $RequestParameters,
+
+        [String]$Filter,
+        [String]$Select,
+
+        [switch]
+        $ExpandSubCollections,
+
         $SessionToken # Might want to switch this to a WebSession object.
     )
 
@@ -13,7 +52,18 @@ function Invoke-BIGIQRestRequest {
             $SessionToken = $BIGIQSession.token
         }
 
-        $uriBuilder = CreateUriBuilder -rootUrl $BIGIQSession.rootUrl -path $Path -first $PSCmdlet.PagingParameters.First -skip $PSCmdlet.PagingParameters.Skip
+        if($Link) {
+            $uri = New-Object System.Uri($Link)
+            $Path = $uri.PathAndQuery
+        }
+        $uriParameters = @{
+            Filter = $Filter
+            Select = $Select
+            First = $PSCmdlet.PagingParameters.First
+            Skip = $PSCmdlet.PagingParameters.Skip
+            ExpandSubCollections = $ExpandSubCollections.IsPresent
+        }
+        $uriBuilder = CreateUriBuilder -rootUri $BIGIQSession.rootUri -path $Path @uriParameters
 
         # Build out the parameters for the Invoke-RestMethod
         # TODO: Add ability to add other Invoke-RestMethod parameters. Though this would be leaky if the way of calling is ever changed.
@@ -21,69 +71,19 @@ function Invoke-BIGIQRestRequest {
             Uri = $uriBuilder.Uri
             Method = $method
             Headers = @{ 'X-F5-Auth-Token' = $SessionToken; 'Content-Type' = 'application/json' } # TODO: Add ability to add custom headers
-            Body = ConvertTo-Json $requestParameters -Compress
+        }
+        if($RequestParameters -is [String]) {
+            $options.Body = $RequestParameters
+        } else {
+            $options.Body = ConvertTo-Json $requestParameters -Compress
         }
 
-        Write-Verbose 'Request body:'
-        $options.Body | Write-Verbose
+        if($options.Body) {
+            Write-Verbose 'Request body:'
+            $options.Body | Write-Verbose
+        }
         if($PSCmdlet.ShouldProcess($Path)) {
             Invoke-RestMethod @options | Write-Output
         }
     }
-}
-
-function GetItemsFromResponse {
-    param(
-        [Object]$bigIQResponse,
-        [Boolean]$includeTotalCount
-    )
-
-    $result = $bigIQResponse
-
-    # Handles where it has multiple items in the response.
-    if($bigIQResponse.PSObject.Properties.Name -contains 'items') {
-        $result = $response.items
-
-        if($includeTotalCount) {
-            Write-Verbose 'Adding item count information'
-            $totalCount = $bigIQResponse.items.Count # If all items were returned in a single request (no paging) simply use the count of items.
-            if($bigIQResponse.PSObject.Properties.Name -contains 'totalItems') {
-                $totalCount = $bigIQResponse.totalItems
-            }
-
-            Add-Member -InputObject $result -NotePropertyName TotalCount -NotePropertyValue $totalCount
-        }
-    } else {
-        # Otherwise, this is a single item response. So no paging information to add.
-    }
-
-    Write-Output $result -NoEnumerate:$includeTotalCount # NoEnumerate prevents PowerShell from unwrapping the array, thus losing that 'TotalCount' property.
-}
-
-function CreateUriBuilder {
-    param(
-        [String]$rootUrl,
-        [String]$path,
-        [UInt64]$first,
-        [UInt64]$skip
-    )
-
-    # Build out the query string for paging the results.
-    $uriBuilder = New-Object System.UriBuilder($rootUrl)
-    $uriBuilder.Path = $path # What if the device is access via a subpath, like a virtual app in IIS? THis would break that.
-
-    $query = [System.Web.HttpUtility]::ParseQueryString($uriBuilder.Query)
-
-    if($first -eq [UInt64]::MaxValue) { $first = $null }
-    if($skip -eq 0) { $skip = $null }
-
-    if($first) {
-        $query['$top'] = [int]($first)
-    }
-    if($skip) {
-        $query['$skip'] = [int]($skip)
-    }
-    $uriBuilder.Query = $query.ToString()
-
-    return $uriBuilder
 }
